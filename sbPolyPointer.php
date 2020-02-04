@@ -322,7 +322,11 @@ class sbPolygonEngine {
         //print '<pre>' . print_r($this->perpendicularityLines, true) . '</pre>';
 
         /*
-         * Если все пересечения по 1 - точка входит в область
+         * Point falls into a poligon if
+         * 1. all the perpendicularity lines intersects ($_line['crosses_ticks']) with polygon at least 1 time
+         * 2. or crosses_ticks is higher than 1 and even in the same time (3, 5, 7 etc)
+         *
+         * If at least one perpendicularity has different crosses_ticks amount then point doesn't fall into polygon
          */
 
         if ($isCrosses == false){
@@ -332,7 +336,7 @@ class sbPolygonEngine {
 
             foreach ($this->perpendicularityLines as $_line){
 
-                if ($_line['crosses_ticks'] == 0 AND self::isOddNumber($_line['crosses_ticks']) == false)
+                if ($_line['crosses_ticks'] == 0 OR self::isOddNumber($_line['crosses_ticks']) == false)
                     $isCrosses = false ;
 
             }
