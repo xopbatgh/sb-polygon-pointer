@@ -26,6 +26,12 @@ class sbPolygonEngine {
         'y2' => 0,
     ];
 
+    // coords used to positionate coordinates to initial position (x=0, y=0) on dump visualization in case of zooming
+    public $zoomOffset = [
+        'minX' => 0,
+        'minY' => 0,
+    ];
+
     /*
      * Arg: polygon_coordinates
      * Example: [
@@ -34,6 +40,10 @@ class sbPolygonEngine {
                     [55.737112, 37.649566],
                     [55.737649, 37.597301],
                 ]
+
+        Methods:
+        — isCrossesWith
+        — previewBounds
      */
     public function __construct($polygon_coordinates){
 
@@ -91,13 +101,56 @@ class sbPolygonEngine {
 
     }
 
-    private function previewBounds($params = []){
-        Global $_CFG ;
+    public function calculateZoomCooficient(){
 
-        $cachedFile = $_CFG['root'] . 'static/img/jj.png';
+        $zoomCooficient = 0.1;
+
+        // zoom cooeficient calculate
+
+        while (true) {
+
+            $isZoomMaximumFound = false;
+
+            foreach ($this->polygon_bounds as $_key => $_point) {
+
+                $x1 = ($this->zoomed_bounds[$_key]['x1'] - $this->zoomOffset['minX']) * $zoomCooficient;
+                $y1 = ($this->zoomed_bounds[$_key]['y1'] - $this->zoomOffset['minY']) * $zoomCooficient;
+                $x2 = ($this->zoomed_bounds[$_key]['x2'] - $this->zoomOffset['minX']) * $zoomCooficient;
+                $y2 = ($this->zoomed_bounds[$_key]['y2'] - $this->zoomOffset['minY']) * $zoomCooficient;
+
+                if ($x1 >= $this->map_width OR $x2 >= $this->map_width) {
+                    $isZoomMaximumFound = true;
+                    break;
+                }
+
+
+                if ($y1 >= $this->map_height OR $y2 >= $this->map_height) {
+                    $isZoomMaximumFound = true;
+                    break;
+                }
+
+                $zoomCooficient++;
+
+
+            }
+
+            if ($isZoomMaximumFound){
+                $zoomCooficient--;
+                $zoomCooficient--;
+                break ;
+            }
+
+        }
+
+        return $zoomCooficient;
+
+    }
+
+    public function previewBounds($draw_perpendicular = true, $draw_center_dot = true){
 
         $final = imagecreate($this->map_width, $this->map_height);
 
+        // color is allocated for the background
         $white = imagecolorallocate($final,255,255,255); // color of text
 
         $redColor = imagecolorallocate($final,255,0,0); // color of text
@@ -106,32 +159,30 @@ class sbPolygonEngine {
 
         //print '<pre>' . print_r($this->polygon_coordinates, true) . '</pre>';
 
-        $zoomOffset = [
-            'minX' => 0,
-            'minY' => 0,
-        ];
+        $this->zoomOffset['minX'] = 0;
+        $this->zoomOffset['minY'] = 0;
 
         foreach ($this->polygon_coordinates as $_point){
 
-            if ($zoomOffset['minX'] == 0 OR $_point['coords']['x'] < $zoomOffset['minX'])
-                $zoomOffset['minX'] = $_point['coords']['x'];
+            if ($this->zoomOffset['minX'] == 0 OR $_point['coords']['x'] < $this->zoomOffset['minX'])
+                $this->zoomOffset['minX'] = $_point['coords']['x'];
 
-            if ($zoomOffset['minY'] == 0 OR $_point['coords']['y'] < $zoomOffset['minY'])
-                $zoomOffset['minY'] = $_point['coords']['y'];
+            if ($this->zoomOffset['minY'] == 0 OR $_point['coords']['y'] < $this->zoomOffset['minY'])
+                $this->zoomOffset['minY'] = $_point['coords']['y'];
 
         }
 
         $this->zoomed_bounds = $this->polygon_bounds ;
 
-        $zoomCooficient = 1000 * 8;
+        $zoomCooficient = $this->calculateZoomCooficient();
 
         foreach ($this->zoomed_bounds as $_key => $_point){
 
             // обнуляем систему координат
-            $this->zoomed_bounds[$_key]['x1'] -= $zoomOffset['minX'];
-            $this->zoomed_bounds[$_key]['y1'] -= $zoomOffset['minY'];
-            $this->zoomed_bounds[$_key]['x2'] -= $zoomOffset['minX'];
-            $this->zoomed_bounds[$_key]['y2'] -= $zoomOffset['minY'];
+            $this->zoomed_bounds[$_key]['x1'] -= $this->zoomOffset['minX'];
+            $this->zoomed_bounds[$_key]['y1'] -= $this->zoomOffset['minY'];
+            $this->zoomed_bounds[$_key]['x2'] -= $this->zoomOffset['minX'];
+            $this->zoomed_bounds[$_key]['y2'] -= $this->zoomOffset['minY'];
 
             $this->zoomed_bounds[$_key]['x1'] *= $zoomCooficient;
             $this->zoomed_bounds[$_key]['y1'] *= $zoomCooficient;
@@ -149,15 +200,15 @@ class sbPolygonEngine {
 
         }
 
-        if (in_array('withPerdendicular', $params)){
+        if ($draw_perpendicular){
 
             foreach ($this->perpendicularityLines as $_line){
 
                 // обнуляем систему координат
-                $_line['x1'] -= $zoomOffset['minX'];
-                $_line['y1'] -= $zoomOffset['minY'];
-                $_line['x2'] -= $zoomOffset['minX'];
-                $_line['y2'] -= $zoomOffset['minY'];
+                $_line['x1'] -= $this->zoomOffset['minX'];
+                $_line['y1'] -= $this->zoomOffset['minY'];
+                $_line['x2'] -= $this->zoomOffset['minX'];
+                $_line['y2'] -= $this->zoomOffset['minY'];
 
                 $_line['x1'] *= $zoomCooficient;
                 $_line['y1'] *= $zoomCooficient;
@@ -172,11 +223,11 @@ class sbPolygonEngine {
 
         }
 
-        if (in_array('withDot', $params)){
+        if ($draw_center_dot){
 
             // обнуляем систему координат
-            $this->point_to_check['coords']['x'] -= $zoomOffset['minX'];
-            $this->point_to_check['coords']['y'] -= $zoomOffset['minY'];
+            $this->point_to_check['coords']['x'] -= $this->zoomOffset['minX'];
+            $this->point_to_check['coords']['y'] -= $this->zoomOffset['minY'];
 
             $this->point_to_check['coords']['x'] *= $zoomCooficient;
             $this->point_to_check['coords']['y'] *= $zoomCooficient;
@@ -188,9 +239,13 @@ class sbPolygonEngine {
 
         }
 
-        imagepng($final, $cachedFile);
 
-        print '<img src="data:image/jpeg;base64,' . base64_encode(file_get_contents($cachedFile)) . '">';
+        ob_start();
+        imagepng($final);
+        // Capture the output and clear the output buffer
+        $imagedata = ob_get_clean();
+
+        print '<img style="border: 1px solid lightgray;" src="data:image/jpeg;base64,' . base64_encode($imagedata) . '">';
 
         //exit();
 
@@ -240,9 +295,9 @@ class sbPolygonEngine {
 
             /*
              * Так как мы проводим перпендикуляры от проверямой точки к коробке полигона (bounds_box),
-             * а потом проверяем пересечения получившихся перпендикуляров с гранями полигона, то может возикнуть следующая проблема:
+             * а затем проверяем пересечения получившихся перпендикуляров с гранями полигона, то может возикнуть следующая проблема:
              * если грань полигона полностью перпендикулярна (ровная!) нашему перпендикуляру, то он будет с ней не пересекаться, а соприкасаться и дальнейшая арифметика не работает.
-             * Поэтому мы удлиняем каждый перпендикуляр на коэффициент $logerityCoefficient
+             * Поэтому, мы удлиняем каждый перпендикуляр на коэффициент $logerityCoefficient
              */
             $logerityCoefficient = 0.000002;
 
@@ -314,9 +369,6 @@ class sbPolygonEngine {
 
 
                 }
-
-        //if ($this->isInsideBoundsBox)
-        //self::previewBounds(['withPerdendicular', 'withDot']);
 
         //print '<pre>' . print_r($this->polygon_bounds, true) . '</pre>';
         //print '<pre>' . print_r($this->perpendicularityLines, true) . '</pre>';

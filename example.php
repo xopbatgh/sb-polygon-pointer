@@ -14,14 +14,15 @@ $polygonBox = [
 
 $sbPolygonEngine = new sbPolygonEngine($polygonBox);
 
+// check if point is inside the polygon
 $isCrosses = $sbPolygonEngine->isCrossesWith(55.746768, 37.625605);
 
-print '$isCrosses: ' . (int) $isCrosses . '<br/>';
+// draw img with visualization
+$sbPolygonEngine->previewBounds($draw_perpendicular = true, $draw_center_dot = true);
 
-$isCrosses = $sbPolygonEngine->isCrossesWith(55.757139, 37.603484);
+print '<br/>$isCrosses: ' . (int) $isCrosses . '<br/>';
 
-print '$isCrosses: ' . (int) $isCrosses . '<br/>';
-
+// dump internal class data
 print '<pre>' . print_r($sbPolygonEngine, true) . '</pre>';
 
 ?>

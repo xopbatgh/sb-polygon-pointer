@@ -27,4 +27,12 @@ $isCrosses = $sbPolygonEngine->isCrossesWith(55.746768, 37.625605);
 
 ```
 
+#### Visualization of polygon and provided point to check ####
+
+```PHP
+
+$sbPolygonEngine->previewBounds($draw_perpendicular = true, $draw_center_dot = true);
+// it will return an <img src="src="data:image/jpeg;base64,....">
+```
+
 Feel free to contribute
